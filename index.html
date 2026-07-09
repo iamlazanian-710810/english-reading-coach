@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>會考英文閱讀教練</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-light: #eef2ff;
+    --accent: #f59e0b;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --bg: #f4f5fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-light: #6b7280;
+    --border: #e5e7eb;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  header {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    padding: 18px 16px 14px;
+    text-align: center;
+  }
+  header h1 { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+  header p { font-size: 12px; opacity: .85; margin-top: 3px; }
+
+  /* ---- bottom tab bar ---- */
+  nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 0 8px;
+    font-size: 12px;
+    color: var(--text-light);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  nav button .ico { display: block; font-size: 22px; margin-bottom: 2px; }
+  nav button.active { color: var(--primary); font-weight: 700; }
+
+  main { max-width: 640px; margin: 0 auto; padding: 14px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .card h3 { font-size: 15px; margin-bottom: 10px; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: #fff; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-amber { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--primary-light); color: var(--primary-dark); }
+  .btn-danger-ghost { background: var(--red-light); color: var(--red); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn + .btn { margin-top: 10px; }
+  .btn-sm { padding: 9px 14px; font-size: 13px; width: auto; display: inline-block; border-radius: 10px; }
+
+  /* ---- capture page ---- */
+  .capture-big {
+    padding: 26px 15px;
+    font-size: 19px;
+  }
+  .capture-big .sub { display: block; font-size: 12px; font-weight: 400; opacity: .8; margin-top: 4px; }
+  #photo-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .thumb {
+    position: relative;
+    width: 84px; height: 84px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb .rm {
+    position: absolute; top: 2px; right: 2px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border: none;
+    font-size: 13px;
+    line-height: 22px;
+    cursor: pointer;
+  }
+  .hint { font-size: 12px; color: var(--text-light); margin-top: 8px; line-height: 1.6; }
+
+  .warn-banner {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+  .warn-banner a { color: var(--primary); font-weight: 700; }
+
+  /* ---- loading ---- */
+  #loading {
+    display: none;
+    text-align: center;
+    padding: 34px 10px;
+  }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid var(--primary-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-msg { font-size: 14px; color: var(--text-light); }
+
+  /* ---- result: markdown ---- */
+  .md h1 { font-size: 18px; color: var(--primary-dark); margin: 6px 0 12px; line-height: 1.4; }
+  .md h2 {
+    font-size: 15px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 16px 0 8px;
+  }
+  .md h3 { font-size: 14px; margin: 12px 0 6px; color: var(--primary-dark); }
+  .md p { font-size: 14px; line-height: 1.85; margin: 7px 0; }
+  .md ul, .md ol { padding-left: 22px; margin: 7px 0; }
+  .md li { font-size: 14px; line-height: 1.85; margin: 4px 0; }
+  .md strong { color: var(--primary-dark); }
+  .md code {
+    background: #f3f4f6;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: #b45309;
+  }
+  .md blockquote {
+    border-left: 4px solid var(--accent);
+    background: #fffbeb;
+    padding: 8px 12px;
+    border-radius: 0 10px 10px 0;
+    margin: 8px 0;
+  }
+  .md hr { border: none; border-top: 1px dashed var(--border); margin: 14px 0; }
+
+  /* ---- result: vocab cards ---- */
+  .word-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: #fff;
+  }
+  .word-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .word-head .w { font-size: 20px; font-weight: 800; color: var(--primary-dark); }
+  .word-head .pos { font-size: 12px; color: #fff; background: var(--accent); padding: 1px 8px; border-radius: 999px; }
+  .word-head .zh { font-size: 14px; color: var(--text); }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .chip-row .lab { font-size: 12px; color: var(--text-light); min-width: 44px; }
+  .chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--green-light);
+    color: var(--green);
+    border: 1px solid #bbf7d0;
+  }
+  .chip.anti { background: var(--red-light); color: var(--red); border-color: #fecaca; }
+  .mnemo {
+    margin-top: 10px;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .example {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.7;
+    border-left: 3px solid var(--primary);
+    padding-left: 10px;
+  }
+  .example .en { font-style: italic; }
+  .example .zh { color: var(--text-light); }
+
+  /* ---- quiz ---- */
+  .quiz-passage {
+    background: var(--primary-light);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    line-height: 2;
+    margin-bottom: 14px;
+  }
+  .blank-tag {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .blank-tag.filled-right { background: var(--green); }
+  .blank-tag.filled-wrong { background: var(--red); }
+  .q-block { margin-bottom: 14px; }
+  .q-num { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .opt {
+    padding: 11px 8px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    word-break: break-word;
+  }
+  .opt.sel { border-color: var(--primary); background: var(--primary-light); font-weight: 700; }
+  .opt.right { border-color: var(--green); background: var(--green-light); font-weight: 700; }
+  .opt.wrong { border-color: var(--red); background: var(--red-light); }
+  .explain {
+    display: none;
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.7;
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 9px 12px;
+  }
+  .score-banner {
+    display: none;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 800;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .coach-comment {
+    background: linear-gradient(135deg, #eef2ff, #fdf4ff);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.8;
+    margin-top: 12px;
+  }
+
+  /* ---- history ---- */
+  .his-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    cursor: pointer;
+  }
+  .his-thumb {
+    width: 52px; height: 52px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: var(--primary-light);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .his-info { flex: 1; min-width: 0; }
+  .his-title { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .his-meta { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+  .his-type {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    margin-right: 6px;
+  }
+  .his-type.vocab { background: #fef3c7; color: #b45309; }
+  .his-del {
+    border: none; background: none;
+    color: var(--text-light);
+    font-size: 18px;
+    padding: 8px;
+    cursor: pointer;
+  }
+  .empty-hint { text-align: center; color: var(--text-light); font-size: 14px; padding: 40px 10px; line-height: 1.8; }
+
+  /* ---- settings ---- */
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #fff;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); }
+  .key-row { display: flex; gap: 8px; }
+  .key-row input { flex: 1; }
+  .key-row button {
+    border: 1.5px solid var(--border);
+    background: #fff;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .steps { font-size: 13px; line-height: 2; color: var(--text); }
+  .steps b { color: var(--primary-dark); }
+  #key-status { font-size: 13px; margin-top: 8px; font-weight: 700; }
+
+  .toast {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(31,41,55,.92);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  .back-row { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 會考英文閱讀教練</h1>
+  <p>拍下閱讀測驗 → 名師拆解 → 單字內化 → 即時模擬考</p>
+</header>
+
+<main>
+
+  <!-- ============ PAGE: capture ============ -->
+  <div class="page active" id="page-capture">
+
+    <div class="warn-banner" id="no-key-banner" style="display:none">
+      ⚠️ 還沒設定 Gemini API 金鑰，AI 分析無法使用。<br>
+      請先到 <a href="#" onclick="switchPage('settings');return false;">⚙️ 設定</a> 頁，照步驟申請免費金鑰（只需設定一次）。
+    </div>
+
+    <div class="card">
+      <button class="btn btn-primary capture-big" onclick="document.getElementById('camera-input').click()">
+        📷 拍下閱讀測驗頁面
+        <span class="sub">寫完一篇就拍一張，跨頁可拍多張</span>
+      </button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="document.getElementById('album-input').click()">
+        🖼️ 從相簿選取
+      </button>
+      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="album-input" accept="image/*" multiple style="display:none">
+      <div id="photo-strip"></div>
+      <p class="hint" id="photo-hint" style="display:none">📌 同一篇文章有好幾頁的話，繼續按上面的按鈕加拍，全部拍齊再開始分析。</p>
+    </div>
+
+    <div class="card" id="action-card" style="display:none">
+      <h3>要請名師做哪一種分析？</h3>
+      <button class="btn btn-primary" id="btn-reading" onclick="runAnalysis('reading')">
+        📖 全文深度拆解
+      </button>
+      <p class="hint" style="margin:6px 0 12px">結構分析、會考陷阱、高頻單字、邏輯心法、名師講評</p>
+      <button class="btn btn-amber" id="btn-vocab" onclick="runAnalysis('vocab')">
+        🎯 關鍵單字內化＋模擬考
+      </button>
+      <p class="hint" style="margin-top:6px">5 個會考關鍵字：同反義、聯想記憶、例句，最後直接在手機上作答克漏字模擬考</p>
+    </div>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <p id="loading-msg">名師正在批閱中…</p>
+    </div>
+
+    <div id="result-area"></div>
+  </div>
+
+  <!-- ============ PAGE: history ============ -->
+  <div class="page" id="page-history">
+    <div id="history-list"></div>
+    <div id="history-viewer"></div>
+  </div>
+
+  <!-- ============ PAGE: settings ============ -->
+  <div class="page" id="page-settings">
+    <div class="card">
+      <h3>🔑 Gemini API 金鑰</h3>
+      <div class="field">
+        <div class="key-row">
+          <input type="password" id="api-key-input" placeholder="貼上你的 API 金鑰" autocomplete="off">
+          <button onclick="toggleKeyVisible()" id="eye-btn">👁️</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveApiKey()">💾 儲存並測試連線</button>
+      <div id="key-status"></div>
+    </div>
+
+    <div class="card">
+      <h3>📋 如何申請免費金鑰（只要做一次）</h3>
+      <div class="steps">
+        1️⃣ 用手機瀏覽器打開 <b>aistudio.google.com/apikey</b><br>
+        2️⃣ 登入你的 Google 帳號<br>
+        3️⃣ 點 <b>「Create API key」（建立 API 金鑰）</b><br>
+        4️⃣ 複製那串 <b>AIza 開頭</b>的金鑰<br>
+        5️⃣ 回到這裡貼上 → 按「儲存並測試連線」<br><br>
+        💡 免費額度每天可分析數十篇文章，個人使用綽綽有餘。金鑰只存在這支手機的瀏覽器裡，不會上傳到任何地方。
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="window.open('https://aistudio.google.com/apikey','_blank')">
+        🔗 打開 Google AI Studio 申請頁
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>🤖 AI 模型</h3>
+      <div class="field">
+        <select id="model-select" onchange="saveModel()">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash（推薦，快又免費）</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro（更聰明但較慢、免費額度較少）</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash（備用）</option>
+        </select>
+      </div>
+      <p class="hint">如果分析失敗或額度用完，可以換一個模型試試。</p>
+    </div>
+
+    <div class="card">
+      <h3>💾 複習紀錄備份</h3>
+      <p class="hint" style="margin-bottom:12px">紀錄只存在這支手機的瀏覽器裡。換手機或清瀏覽器資料前，記得先匯出備份。</p>
+      <button class="btn btn-ghost" onclick="exportBackup()">⬇️ 匯出備份檔</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()">⬆️ 匯入備份檔</button>
+      <input type="file" id="import-input" accept=".json" style="display:none">
+      <button class="btn btn-danger-ghost" onclick="clearAllHistory()">🗑️ 清空所有複習紀錄</button>
+    </div>
+  </div>
+
+</main>
+
+<nav>
+  <button id="tab-capture" class="active" onclick="switchPage('capture')"><span class="ico">📷</span>拍照分析</button>
+  <button id="tab-history" onclick="switchPage('history')"><span class="ico">📚</span>複習紀錄</button>
+  <button id="tab-settings" onclick="switchPage('settings')"><span class="ico">⚙️</span>設定</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ================= constants & storage ================= */
+var LS_KEY_API = "coach_api_key";
+var LS_KEY_MODEL = "coach_model";
+var LS_KEY_HISTORY = "coach_history";
+
+var READING_PROMPT =
+  "你是一位專業的國中英文補教名師。你的學生是一位即將面對「國中教育會考」的國三學生。" +
+  "照片是學生剛寫完的英文閱讀測驗頁面，請先仔細辨識照片中的英文文章與題目內容，" +
+  "然後「以會考難度為基準」深度拆解這篇文章，用繁體中文、Markdown 格式回應。\n\n" +
+  "第一行請輸出一級標題，格式：「# 📖 文章主題：(用15字以內概括這篇文章)」\n\n" +
+  "接著依照以下四段回應（每段用 ## 開頭的標題）：\n\n" +
+  "## 1️⃣ 結構分析（魔鬼細節）\n" +
+  "找出文章中所有「決定句子走向」的關鍵詞（如：suggest, however, results from, despite）。" +
+  "請特別點出這類詞在會考中常見的「陷阱用法」（例如：although 不能跟 but 連用）。\n\n" +
+  "## 2️⃣ 單字語境（會考必備）\n" +
+  "從文中挑出 5 個影響理解且會考高頻率出現的單字，逐一說明它在本文語境中的意思與常見考法。\n\n" +
+  "## 3️⃣ 邏輯轉折（心法傳授）\n" +
+  "用簡單的流程說明（可以用「→」串接關鍵句），解釋段落之間的邏輯關係" +
+  "（例如：先壓抑後揚、因果論證、或是正反意見對照），讓學生學會「看骨架」。\n\n" +
+  "## 4️⃣ 名師講評\n" +
+  "用輕鬆、有邏輯且略帶補教名師風格的口吻給予回饋，避免死板翻譯，要點出「為什麼這篇值得讀」。" +
+  "如果照片中看得到學生的作答痕跡，順便點評答題狀況與觀念盲點。\n\n" +
+  "注意：不要使用 Markdown 表格，改用條列式；粗體標重點；適度使用表情符號讓國三學生讀起來不無聊。";
+
+var VOCAB_PROMPT =
+  "你是一位專業的國中英文補教名師。你的學生是一位即將面對「國中教育會考」的國三學生。" +
+  "照片是英文閱讀測驗頁面，請先仔細辨識照片中的英文文章，然後協助學生內化文章中的關鍵單字與片語。\n\n" +
+  "請依照以下邏輯產出內容：\n" +
+  "1. 深度選字：挑出 5 個文中影響理解且會考常見的關鍵字或片語。\n" +
+  "2. 記憶網格：每個字提供 (a) 3 個同義詞、(b) 3 個反義詞（片語或無恰當反義詞時，改給「相反概念」的表達）、(c) 一個幽默好記的聯想法或字根拆解。\n" +
+  "3. 情境造句：每個字給一個符合國三學生生活情境的英文例句，附中文翻譯。\n" +
+  "4. 即時模擬考：利用這 5 個字設計一段「全新的」克漏字英文小短文（約 50-80 字），挖 5 個空格，" +
+  "短文中以 __1__ 到 __5__ 標示空格位置；每題提供 4 個選項（干擾選項要有會考鑑別度），並附標準答案與名師解析。\n\n" +
+  "請只回覆純 JSON（不要 markdown 圍欄、不要任何多餘文字），格式如下：\n" +
+  "{\n" +
+  ' "title": "文章主題（15字以內中文）",\n' +
+  ' "words": [{"word":"單字或片語","pos":"詞性","zh":"中文意思","synonyms":["s1","s2","s3"],"antonyms":["a1","a2","a3"],"mnemonic":"幽默聯想法或字根拆解","example":"英文例句","example_zh":"例句中文翻譯"}],\n' +
+  ' "quiz": {"passage":"含 __1__ 至 __5__ 空格的英文短文","questions":[{"n":1,"options":["選項1","選項2","選項3","選項4"],"answer":0,"explanation":"名師解析（繁體中文，說明為什麼選這個、其他選項錯在哪）"}]},\n' +
+  ' "coach_comment": "一句幽默又鼓勵人的名師結語（繁體中文）"\n' +
+  "}\n" +
+  '其中 "answer" 是正確選項在 options 陣列中的索引（0 到 3）。words 恰好 5 個，questions 恰好 5 題。';
+
+var LOADING_MSGS = {
+  reading: ["名師戴上老花眼鏡讀文章中…", "正在標記會考陷阱…", "拆解文章骨架中…", "名師講評撰寫中…"],
+  vocab: ["名師圈選關鍵單字中…", "編寫幽默聯想法…", "出題老師磨刀霍霍…", "模擬考卷印製中…"]
+};
+
+var photos = [];        // [{dataUrl, base64, mime}]
+var loadingTimer = null;
+
+/* ================= helpers ================= */
+function $(id) { return document.getElementById(id); }
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return "";
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function showToast(msg) {
+  var t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function () { t.classList.remove("show"); }, 2600);
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY_HISTORY) || "[]"); }
+  catch (e) { return []; }
+}
+function setHistory(list) {
+  try {
+    localStorage.setItem(LS_KEY_HISTORY, JSON.stringify(list));
+  } catch (e) {
+    // storage full: drop oldest entries and retry once
+    if (list.length > 3) {
+      list = list.slice(0, Math.floor(list.length / 2));
+      try { localStorage.setItem(LS_KEY_HISTORY, JSON.stringify(list)); showToast("儲存空間不足，已自動清除較舊的紀錄"); }
+      catch (e2) { showToast("儲存空間不足，這筆紀錄未能保存"); }
+    } else {
+      showToast("儲存空間不足，這筆紀錄未能保存");
+    }
+  }
+}
+
+/* ================= page switching ================= */
+function switchPage(name) {
+  var pages = ["capture", "history", "settings"];
+  for (var i = 0; i < pages.length; i++) {
+    $("page-" + pages[i]).classList.toggle("active", pages[i] === name);
+    $("tab-" + pages[i]).classList.toggle("active", pages[i] === name);
+  }
+  if (name === "history") renderHistoryList();
+  window.scrollTo(0, 0);
+}
+
+/* ================= photo handling ================= */
+function compressImage(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var MAX = 1600;
+        var w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve({
+          dataUrl: dataUrl,
+          base64: dataUrl.split(",")[1],
+          mime: "image/jpeg"
+        });
+      };
+      img.onerror = function () { reject(new Error("圖片讀取失敗")); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function () { reject(new Error("檔案讀取失敗")); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function handleFiles(fileList) {
+  var files = Array.prototype.slice.call(fileList);
+  if (!files.length) return;
+  var jobs = files.map(compressImage);
+  Promise.all(jobs).then(function (results) {
+    photos = photos.concat(results);
+    renderPhotoStrip();
+  }).catch(function (err) {
+    showToast("照片處理失敗：" + err.message);
+  });
+}
+
+function renderPhotoStrip() {
+  var strip = $("photo-strip");
+  strip.innerHTML = "";
+  for (var i = 0; i < photos.length; i++) {
+    (function (idx) {
+      var div = document.createElement("div");
+      div.className = "thumb";
+      var img = document.createElement("img");
+      img.src = photos[idx].dataUrl;
+      var rm = document.createElement("button");
+      rm.className = "rm";
+      rm.textContent = "✕";
+      rm.onclick = function () { photos.splice(idx, 1); renderPhotoStrip(); };
+      div.appendChild(img);
+      div.appendChild(rm);
+      strip.appendChild(div);
+    })(i);
+  }
+  $("action-card").style.display = photos.length ? "block" : "none";
+  $("photo-hint").style.display = photos.length ? "block" : "none";
+}
+
+/* ================= Gemini API ================= */
+function callGemini(promptText, imgs, jsonMode) {
+  var key = localStorage.getItem(LS_KEY_API) || "";
+  var model = localStorage.getItem(LS_KEY_MODEL) || "gemini-2.5-flash";
+  if (!key) return Promise.reject(new Error("NO_KEY"));
+
+  var parts = [{ text: promptText }];
+  for (var i = 0; i < imgs.length; i++) {
+    parts.push({ inline_data: { mime_type: imgs[i].mime, data: imgs[i].base64 } });
+  }
+  var genCfg = { temperature: 0.7, maxOutputTokens: 16384 };
+  if (jsonMode) genCfg.responseMimeType = "application/json";
+  if (model.indexOf("2.5-flash") !== -1) genCfg.thinkingConfig = { thinkingBudget: 0 };
+
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(key);
+
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: genCfg })
+  }).then(function (res) {
+    return res.json().then(function (data) {
+      if (!res.ok) {
+        var msg = (data && data.error && data.error.message) || ("HTTP " + res.status);
+        if (res.status === 400 && /API key/i.test(msg)) throw new Error("BAD_KEY");
+        if (res.status === 429) throw new Error("QUOTA");
+        throw new Error(msg);
+      }
+      var cand = data.candidates && data.candidates[0];
+      if (!cand || !cand.content || !cand.content.parts) {
+        if (data.promptFeedback && data.promptFeedback.blockReason) throw new Error("內容被安全機制擋下，請換一張照片試試");
+        throw new Error("AI 沒有回傳內容，請再試一次");
+      }
+      var text = "";
+      for (var j = 0; j < cand.content.parts.length; j++) {
+        if (cand.content.parts[j].text) text += cand.content.parts[j].text;
+      }
+      if (!text) throw new Error("AI 回傳空白內容，請再試一次");
+      if (cand.finishReason === "MAX_TOKENS") {
+        if (jsonMode) throw new Error("AI 回覆過長被截斷，請再按一次重新分析");
+        text += "\n\n> ⚠️ 內容過長，結尾被截斷了，可以再按一次重新分析";
+      }
+      return text;
+    });
+  });
+}
+
+function friendlyError(err) {
+  if (err.message === "NO_KEY") return "還沒設定 API 金鑰，請到「⚙️ 設定」頁完成設定。";
+  if (err.message === "BAD_KEY") return "API 金鑰無效，請到「⚙️ 設定」頁重新貼上正確的金鑰。";
+  if (err.message === "QUOTA") return "今天的免費額度用完了（或請求太頻繁）。可以到設定頁換一個模型，或稍後再試。";
+  if (/Failed to fetch|NetworkError|network/i.test(err.message)) return "網路連線失敗，請確認手機有網路後再試。";
+  return "分析失敗：" + err.message;
+}
+
+/* ================= analysis flow ================= */
+function setLoading(on, type) {
+  $("loading").style.display = on ? "block" : "none";
+  $("btn-reading").disabled = on;
+  $("btn-vocab").disabled = on;
+  if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null; }
+  if (on) {
+    var msgs = LOADING_MSGS[type] || LOADING_MSGS.reading;
+    var i = 0;
+    $("loading-msg").textContent = msgs[0];
+    loadingTimer = setInterval(function () {
+      i = (i + 1) % msgs.length;
+      $("loading-msg").textContent = msgs[i];
+    }, 2500);
+  }
+}
+
+function runAnalysis(type) {
+  if (!photos.length) { showToast("請先拍照或選取照片"); return; }
+  if (!(localStorage.getItem(LS_KEY_API) || "")) {
+    showToast("請先到「⚙️ 設定」頁設定 API 金鑰");
+    switchPage("settings");
+    return;
+  }
+  $("result-area").innerHTML = "";
+  setLoading(true, type);
+
+  var prompt = type === "reading" ? READING_PROMPT : VOCAB_PROMPT;
+  var jsonMode = type === "vocab";
+
+  callGemini(prompt, photos, jsonMode).then(function (text) {
+    setLoading(false);
+    if (type === "reading") {
+      var title = extractMdTitle(text) || "閱讀拆解";
+      renderReadingResult($("result-area"), text, true);
+      saveHistoryEntry("reading", title, text);
+    } else {
+      var obj = parseVocabJson(text);
+      renderVocabResult($("result-area"), obj, true);
+      saveHistoryEntry("vocab", obj.title || "單字內化", obj);
+    }
+    // scroll to result
+    setTimeout(function () {
+      var el = $("result-area");
+      if (el.firstChild) el.firstChild.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }).catch(function (err) {
+    setLoading(false);
+    $("result-area").innerHTML = '<div class="card" style="border-left:4px solid var(--red)"><p style="font-size:14px;line-height:1.8">😥 ' + escapeHtml(friendlyError(err)) + "</p></div>";
+  });
+}
+
+function extractMdTitle(md) {
+  var m = md.match(/^#\s*(.+)$/m);
+  if (!m) return null;
+  return m[1].replace(/📖|文章主題[:：]?/g, "").trim().slice(0, 30);
+}
+
+function parseVocabJson(text) {
+  var cleaned = text.trim();
+  // strip markdown fences if present
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  // take substring between first { and last }
+  var a = cleaned.indexOf("{"), b = cleaned.lastIndexOf("}");
+  if (a !== -1 && b !== -1) cleaned = cleaned.slice(a, b + 1);
+  var obj;
+  try { obj = JSON.parse(cleaned); }
+  catch (e) { throw new Error("AI 回傳格式不正確，請再按一次重新分析"); }
+  if (!obj.words || !obj.words.length) throw new Error("AI 沒有選出單字，請再試一次");
+  // normalize quiz answers: Gemini may return "answer" as a string
+  if (obj.quiz && obj.quiz.questions) {
+    for (var i = 0; i < obj.quiz.questions.length; i++) {
+      var q = obj.quiz.questions[i];
+      q.answer = parseInt(q.answer, 10);
+      if (!q.options || !q.options.length || isNaN(q.answer) || q.answer < 0 || q.answer >= q.options.length) {
+        throw new Error("AI 回傳的考題格式不正確，請再按一次重新分析");
+      }
+    }
+  }
+  return obj;
+}
+
+/* ================= markdown render (safe, minimal) ================= */
+function mdToHtml(md) {
+  var lines = md.split(/\r?\n/);
+  var html = "";
+  var inUl = false, inOl = false;
+
+  function closeLists() {
+    if (inUl) { html += "</ul>"; inUl = false; }
+    if (inOl) { html += "</ol>"; inOl = false; }
+  }
+  function inline(s) {
+    s = escapeHtml(s);
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    return s;
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var t = line.trim();
+    if (!t) { closeLists(); continue; }
+
+    var m;
+    if ((m = t.match(/^###\s+(.*)/))) { closeLists(); html += "<h3>" + inline(m[1]) + "</h3>"; }
+    else if ((m = t.match(/^##\s+(.*)/))) { closeLists(); html += "<h2>" + inline(m[1]) + "</h2>"; }
+    else if ((m = t.match(/^#\s+(.*)/))) { closeLists(); html += "<h1>" + inline(m[1]) + "</h1>"; }
+    else if (/^(-{3,}|\*{3,})$/.test(t)) { closeLists(); html += "<hr>"; }
+    else if ((m = t.match(/^>\s?(.*)/))) { closeLists(); html += "<blockquote>" + inline(m[1]) + "</blockquote>"; }
+    else if ((m = t.match(/^[-*]\s+(.*)/))) {
+      if (inOl) { html += "</ol>"; inOl = false; }
+      if (!inUl) { html += "<ul>"; inUl = true; }
+      html += "<li>" + inline(m[1]) + "</li>";
+    }
+    else if ((m = t.match(/^\d+[.)]\s+(.*)/))) {
+      if (inUl) { html += "</ul>"; inUl = false; }
+      if (!inOl) { html += "<ol>"; inOl = true; }
+      html += "<li>" + inline(m[1]) + "</li>";
+    }
+    else if (/^\|.*\|$/.test(t)) {
+      // simple table fallback: render each row as a paragraph
+      if (/^\|[\s|:-]+\|$/.test(t)) continue;
+      closeLists();
+      var cells = t.split("|").filter(function (c) { return c.trim() !== ""; }).map(function (c) { return inline(c.trim()); });
+      html += "<p>" + cells.join("　|　") + "</p>";
+    }
+    else { closeLists(); html += "<p>" + inline(t) + "</p>"; }
+  }
+  closeLists();
+  return html;
+}
+
+/* ================= render: reading ================= */
+function renderReadingResult(container, md, fresh) {
+  var card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = '<div class="md">' + mdToHtml(md) + "</div>";
+  container.appendChild(card);
+  if (fresh) {
+    var tip = document.createElement("p");
+    tip.className = "hint";
+    tip.style.textAlign = "center";
+    tip.textContent = "✅ 已自動存入「📚 複習紀錄」";
+    container.appendChild(tip);
+  }
+}
+
+/* ================= render: vocab + quiz ================= */
+function renderVocabResult(container, data, fresh) {
+  var card = document.createElement("div");
+  card.className = "card";
+
+  var html = '<div class="md"><h1>🎯 ' + escapeHtml(data.title || "關鍵單字內化") + "</h1></div>";
+
+  // word cards
+  for (var i = 0; i < data.words.length; i++) {
+    var w = data.words[i];
+    html += '<div class="word-card">';
+    html += '<div class="word-head"><span class="w">' + escapeHtml(w.word) + "</span>";
+    if (w.pos) html += '<span class="pos">' + escapeHtml(w.pos) + "</span>";
+    html += '<span class="zh">' + escapeHtml(w.zh || "") + "</span></div>";
+
+    if (w.synonyms && w.synonyms.length) {
+      html += '<div class="chip-row"><span class="lab">同義</span>';
+      for (var s = 0; s < w.synonyms.length; s++) html += '<span class="chip">' + escapeHtml(w.synonyms[s]) + "</span>";
+      html += "</div>";
+    }
+    if (w.antonyms && w.antonyms.length) {
+      html += '<div class="chip-row"><span class="lab">反義</span>';
+      for (var a = 0; a < w.antonyms.length; a++) html += '<span class="chip anti">' + escapeHtml(w.antonyms[a]) + "</span>";
+      html += "</div>";
+    }
+    if (w.mnemonic) html += '<div class="mnemo">🧠 ' + escapeHtml(w.mnemonic) + "</div>";
+    if (w.example) {
+      html += '<div class="example"><div class="en">' + escapeHtml(w.example) + "</div>";
+      if (w.example_zh) html += '<div class="zh">' + escapeHtml(w.example_zh) + "</div>";
+      html += "</div>";
+    }
+    html += "</div>";
+  }
+  card.innerHTML = html;
+  container.appendChild(card);
+
+  // quiz card
+  if (data.quiz && data.quiz.questions && data.quiz.questions.length) {
+    var quizCard = document.createElement("div");
+    quizCard.className = "card";
+    quizCard.id = "quiz-card";
+    quizCard.innerHTML = buildQuizHtml(data.quiz);
+    container.appendChild(quizCard);
+    bindQuizEvents(quizCard, data.quiz);
+  }
+
+  if (data.coach_comment) {
+    var cc = document.createElement("div");
+    cc.className = "card";
+    cc.innerHTML = '<div class="coach-comment">💬 <strong>名師的話：</strong>' + escapeHtml(data.coach_comment) + "</div>";
+    container.appendChild(cc);
+  }
+
+  if (fresh) {
+    var tip = document.createElement("p");
+    tip.className = "hint";
+    tip.style.textAlign = "center";
+    tip.textContent = "✅ 已自動存入「📚 複習紀錄」，之後可以重新作答";
+    container.appendChild(tip);
+  }
+}
+
+function buildQuizHtml(quiz) {
+  var html = '<h3>📝 即時模擬考：克漏字</h3>';
+  html += '<div class="score-banner" id="score-banner"></div>';
+
+  // passage with tappable blank tags
+  var passage = escapeHtml(quiz.passage || "");
+  passage = passage.replace(/__(\d)__/g, function (all, n) {
+    return '<span class="blank-tag" id="blank-' + n + '">(' + n + ") ______</span>";
+  });
+  html += '<div class="quiz-passage">' + passage + "</div>";
+
+  for (var i = 0; i < quiz.questions.length; i++) {
+    var q = quiz.questions[i];
+    html += '<div class="q-block" data-q="' + i + '">';
+    html += '<div class="q-num">第 ' + escapeHtml(String(q.n || i + 1)) + " 題</div>";
+    html += '<div class="opts">';
+    for (var o = 0; o < q.options.length; o++) {
+      html += '<button class="opt" data-q="' + i + '" data-o="' + o + '">' + escapeHtml(q.options[o]) + "</button>";
+    }
+    html += "</div>";
+    html += '<div class="explain" id="explain-' + i + '"></div>';
+    html += "</div>";
+  }
+  html += '<button class="btn btn-primary" id="submit-quiz" disabled>✍️ 交卷看成績</button>';
+  html += '<button class="btn btn-ghost" id="retry-quiz" style="display:none">🔄 重新作答</button>';
+  return html;
+}
+
+function bindQuizEvents(quizCard, quiz) {
+  var submitted = false;
+  var answers = {};   // local per-quiz state: {qIndex(string): optIndex(number)}
+  var opts = quizCard.querySelectorAll(".opt");
+
+  function updateSubmitState() {
+    var answered = Object.keys(answers).length;
+    quizCard.querySelector("#submit-quiz").disabled = (answered < quiz.questions.length);
+  }
+
+  for (var i = 0; i < opts.length; i++) {
+    opts[i].onclick = function () {
+      if (submitted) return;
+      var qi = this.getAttribute("data-q");
+      var oi = parseInt(this.getAttribute("data-o"), 10);
+      answers[qi] = oi;
+      var siblings = quizCard.querySelectorAll('.opt[data-q="' + qi + '"]');
+      for (var s = 0; s < siblings.length; s++) siblings[s].classList.remove("sel");
+      this.classList.add("sel");
+      // fill the blank tag in passage
+      var q = quiz.questions[parseInt(qi, 10)];
+      var blank = quizCard.querySelector("#blank-" + (q.n || parseInt(qi, 10) + 1));
+      if (blank) blank.textContent = "(" + (q.n || parseInt(qi, 10) + 1) + ") " + q.options[oi];
+      updateSubmitState();
+    };
+  }
+
+  quizCard.querySelector("#submit-quiz").onclick = function () {
+    if (submitted) return;
+    submitted = true;
+    var correct = 0;
+    for (var qi = 0; qi < quiz.questions.length; qi++) {
+      var q = quiz.questions[qi];
+      var picked = answers[String(qi)];
+      var isRight = picked === q.answer;
+      if (isRight) correct++;
+      var siblings = quizCard.querySelectorAll('.opt[data-q="' + qi + '"]');
+      for (var s = 0; s < siblings.length; s++) {
+        var oi = parseInt(siblings[s].getAttribute("data-o"), 10);
+        if (oi === q.answer) siblings[s].classList.add("right");
+        else if (oi === picked) siblings[s].classList.add("wrong");
+      }
+      var blank = quizCard.querySelector("#blank-" + (q.n || qi + 1));
+      if (blank) {
+        blank.classList.add(isRight ? "filled-right" : "filled-wrong");
+        blank.textContent = "(" + (q.n || qi + 1) + ") " + q.options[q.answer];
+      }
+      var ex = quizCard.querySelector("#explain-" + qi);
+      if (ex) {
+        ex.style.display = "block";
+        ex.innerHTML = (isRight ? "⭕ 答對！" : "❌ 答錯。正確答案：<strong>" + escapeHtml(q.options[q.answer]) + "</strong><br>") +
+          "👨‍🏫 " + escapeHtml(q.explanation || "");
+      }
+    }
+    var banner = quizCard.querySelector("#score-banner");
+    banner.style.display = "block";
+    var pct = correct / quiz.questions.length;
+    if (pct === 1) { banner.style.background = "var(--green-light)"; banner.style.color = "var(--green)"; banner.textContent = "🏆 滿分 " + correct + "/" + quiz.questions.length + "！會考等著你去征服！"; }
+    else if (pct >= 0.6) { banner.style.background = "var(--primary-light)"; banner.style.color = "var(--primary-dark)"; banner.textContent = "💪 答對 " + correct + "/" + quiz.questions.length + "，看解析把漏掉的補起來！"; }
+    else { banner.style.background = "#fffbeb"; banner.style.color = "#b45309"; banner.textContent = "📖 答對 " + correct + "/" + quiz.questions.length + "，這幾個字就是你的進步空間！"; }
+    banner.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    this.style.display = "none";
+    quizCard.querySelector("#retry-quiz").style.display = "block";
+  };
+
+  quizCard.querySelector("#retry-quiz").onclick = function () {
+    quizCard.innerHTML = buildQuizHtml(quiz);
+    bindQuizEvents(quizCard, quiz);
+  };
+}
+
+/* ================= history ================= */
+function makeThumb(dataUrl) {
+  // photos[0] already compressed; make a tiny thumb for the list
+  return new Promise(function (resolve) {
+    var img = new Image();
+    img.onload = function () {
+      var MAX = 120;
+      var w = img.width, h = img.height;
+      if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+      else { w = Math.round(w * MAX / h); h = MAX; }
+      var c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", 0.6));
+    };
+    img.onerror = function () { resolve(null); };
+    img.src = dataUrl;
+  });
+}
+
+function saveHistoryEntry(type, title, data) {
+  var entry = {
+    id: Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    ts: Date.now(),
+    type: type,
+    title: title || (type === "reading" ? "閱讀拆解" : "單字內化"),
+    data: data,
+    thumb: null
+  };
+  var thumbSrc = photos.length ? photos[0].dataUrl : null;
+  var done = function () {
+    var list = getHistory();
+    list.unshift(entry);
+    if (list.length > 60) list = list.slice(0, 60);
+    setHistory(list);
+  };
+  if (thumbSrc) makeThumb(thumbSrc).then(function (t) { entry.thumb = t; done(); });
+  else done();
+}
+
+function fmtDate(ts) {
+  var d = new Date(ts);
+  var p = function (n) { return (n < 10 ? "0" : "") + n; };
+  return d.getFullYear() + "/" + p(d.getMonth() + 1) + "/" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function renderHistoryList() {
+  $("history-viewer").innerHTML = "";
+  var listEl = $("history-list");
+  listEl.style.display = "block";
+  var list = getHistory();
+  if (!list.length) {
+    listEl.innerHTML = '<div class="empty-hint">還沒有任何紀錄 📭<br>去「📷 拍照分析」做第一篇吧！</div>';
+    return;
+  }
+  listEl.innerHTML = "";
+  for (var i = 0; i < list.length; i++) {
+    (function (entry) {
+      var item = document.createElement("div");
+      item.className = "his-item";
+
+      var safeThumb = (typeof entry.thumb === "string" && entry.thumb.indexOf("data:image/") === 0) ? entry.thumb : null;
+      var thumbHtml = safeThumb
+        ? '<img class="his-thumb" src="' + safeThumb + '" alt="">'
+        : '<div class="his-thumb">' + (entry.type === "reading" ? "📖" : "🎯") + "</div>";
+      var typeLabel = entry.type === "reading"
+        ? '<span class="his-type">📖 全文拆解</span>'
+        : '<span class="his-type vocab">🎯 單字模擬考</span>';
+
+      item.innerHTML = thumbHtml +
+        '<div class="his-info"><div class="his-title">' + escapeHtml(entry.title) + "</div>" +
+        '<div class="his-meta">' + typeLabel + escapeHtml(fmtDate(entry.ts)) + "</div></div>" +
+        '<button class="his-del">🗑️</button>';
+
+      item.querySelector(".his-del").onclick = function (e) {
+        e.stopPropagation();
+        if (!confirm("確定刪除這筆紀錄？")) return;
+        var l = getHistory().filter(function (x) { return x.id !== entry.id; });
+        setHistory(l);
+        renderHistoryList();
+      };
+      item.onclick = function () { openHistoryEntry(entry.id); };
+      listEl.appendChild(item);
+    })(list[i]);
+  }
+}
+
+function openHistoryEntry(id) {
+  var entry = null;
+  var list = getHistory();
+  for (var i = 0; i < list.length; i++) if (list[i].id === id) { entry = list[i]; break; }
+  if (!entry) return;
+
+  $("history-list").style.display = "none";
+  var viewer = $("history-viewer");
+  viewer.innerHTML = '<div class="back-row"><button class="btn btn-ghost btn-sm" onclick="renderHistoryList()">← 返回紀錄列表</button></div>';
+
+  var container = document.createElement("div");
+  viewer.appendChild(container);
+  if (entry.type === "reading") renderReadingResult(container, entry.data, false);
+  else renderVocabResult(container, entry.data, false);
+  window.scrollTo(0, 0);
+}
+
+/* ================= settings ================= */
+function toggleKeyVisible() {
+  var inp = $("api-key-input");
+  inp.type = inp.type === "password" ? "text" : "password";
+}
+
+function saveApiKey() {
+  var key = $("api-key-input").value.trim();
+  var st = $("key-status");
+  if (!key) { st.style.color = "var(--red)"; st.textContent = "請先貼上金鑰再儲存。"; return; }
+  localStorage.setItem(LS_KEY_API, key);
+  st.style.color = "var(--text-light)";
+  st.textContent = "⏳ 測試連線中…";
+
+  callGemini("請只回覆兩個字：成功", [], false).then(function () {
+    st.style.color = "var(--green)";
+    st.textContent = "✅ 金鑰有效，連線成功！可以開始拍照分析了。";
+    updateKeyBanner();
+  }).catch(function (err) {
+    if (err.message === "BAD_KEY") localStorage.removeItem(LS_KEY_API);
+    updateKeyBanner();
+    st.style.color = "var(--red)";
+    st.textContent = "❌ " + friendlyError(err);
+  });
+}
+
+function saveModel() {
+  localStorage.setItem(LS_KEY_MODEL, $("model-select").value);
+  showToast("已切換模型");
+}
+
+function updateKeyBanner() {
+  $("no-key-banner").style.display = (localStorage.getItem(LS_KEY_API) || "") ? "none" : "block";
+}
+
+/* ================= backup ================= */
+function exportBackup() {
+  var payload = {
+    app: "exam-reading-coach",
+    exported_at: new Date().toISOString(),
+    history: getHistory()
+  };
+  var blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  var d = new Date();
+  a.download = "reading_coach_backup_" + d.getFullYear() + (d.getMonth() + 1 < 10 ? "0" : "") + (d.getMonth() + 1) + (d.getDate() < 10 ? "0" : "") + d.getDate() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast("備份檔已下載");
+}
+
+function importBackup(file) {
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      var payload = JSON.parse(e.target.result);
+      if (!payload.history || !Array.isArray(payload.history)) throw new Error("bad format");
+      var existing = getHistory();
+      var ids = {};
+      for (var i = 0; i < existing.length; i++) ids[existing[i].id] = true;
+      var added = 0;
+      for (var j = 0; j < payload.history.length; j++) {
+        var en = payload.history[j];
+        var valid = en && en.id && (
+          (en.type === "reading" && typeof en.data === "string") ||
+          (en.type === "vocab" && en.data && Array.isArray(en.data.words))
+        );
+        if (!valid || ids[en.id]) continue;
+        if (typeof en.ts !== "number") en.ts = 0;
+        existing.push(en);
+        added++;
+      }
+      existing.sort(function (a, b) { return b.ts - a.ts; });
+      if (existing.length > 60) existing = existing.slice(0, 60);
+      setHistory(existing);
+      showToast("匯入完成，新增 " + added + " 筆紀錄");
+    } catch (err) {
+      showToast("匯入失敗：檔案格式不正確");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllHistory() {
+  if (!confirm("確定要清空所有複習紀錄？此動作無法復原（建議先匯出備份）。")) return;
+  localStorage.removeItem(LS_KEY_HISTORY);
+  showToast("已清空所有紀錄");
+}
+
+/* ================= init ================= */
+(function init() {
+  $("camera-input").addEventListener("change", function () { handleFiles(this.files); this.value = ""; });
+  $("album-input").addEventListener("change", function () { handleFiles(this.files); this.value = ""; });
+  $("import-input").addEventListener("change", function () { if (this.files.length) importBackup(this.files[0]); this.value = ""; });
+
+  var savedKey = localStorage.getItem(LS_KEY_API) || "";
+  if (savedKey) $("api-key-input").value = savedKey;
+  var savedModel = localStorage.getItem(LS_KEY_MODEL) || "gemini-2.5-flash";
+  $("model-select").value = savedModel;
+
+  updateKeyBanner();
+  if (!savedKey) switchPage("settings");
+})();
+</script>
+</body>
+</html>
