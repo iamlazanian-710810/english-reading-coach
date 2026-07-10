@@ -486,7 +486,7 @@
       <button class="btn btn-danger-ghost" onclick="clearAllHistory()">🗑️ 清空所有複習紀錄</button>
     </div>
 
-    <p class="hint" style="text-align:center;margin-bottom:8px">程式版本：2026-07-10 (3)　·　模型：Gemini 3 系列</p>
+    <p class="hint" style="text-align:center;margin-bottom:8px">程式版本：2026-07-10 (4)　·　模型：Gemini 3 系列</p>
   </div>
 
 </main>
@@ -509,40 +509,50 @@ var LS_KEY_HISTORY = "coach_history";
 
 var READING_PROMPT =
   "你是一位專業的國中英文補教名師。你的學生是一位即將面對「國中教育會考」的國三學生。" +
-  "照片是學生剛寫完的英文閱讀測驗頁面，請先仔細辨識照片中的英文文章與題目內容，" +
-  "然後「以會考難度為基準」深度拆解這篇文章，用繁體中文、Markdown 格式回應。\n\n" +
+  "照片是學生剛寫完的英文閱讀測驗頁面，請先仔細辨識照片中的英文文章、題目，以及學生的作答痕跡（勾選、圈選、劃記）。" +
+  "然後「以會考難度為基準」回應，用繁體中文、Markdown 格式。\n\n" +
   "第一行請輸出一級標題，格式：「# 📖 文章主題：(用15字以內概括這篇文章)」\n\n" +
-  "接著依照以下四段回應（每段用 ## 開頭的標題）：\n\n" +
-  "## 1️⃣ 結構分析（魔鬼細節）\n" +
-  "找出文章中所有「決定句子走向」的關鍵詞（如：suggest, however, results from, despite）。" +
+  "接著依照以下順序回應（每段用 ## 開頭的標題）：\n\n" +
+  "## 1️⃣ 作答檢討（最優先、最重要）\n" +
+  "如果照片中看得到題目與學生的作答：逐題判斷對錯，每題標註會考題型【主旨題／細節題／推論題／圖表題／猜字題】。" +
+  "答錯的題目要診斷錯誤原因（是單字不懂？關鍵句看錯？推論跳太快？還是被陷阱選項騙？），" +
+  "並明確指出「正確答案的證據在文章哪一句」。答對的題目簡短帶過即可。\n" +
+  "如果照片中看不到題目或作答痕跡，這一段改為：挑出這篇文章「最可能出題的 3 個點」，" +
+  "各出一題會考風格的練習題（附四個選項與答案解析）。\n\n" +
+  "## 2️⃣ 結構分析（魔鬼細節）\n" +
+  "找出文章中「決定句子走向」的關鍵詞（如：suggest, however, results from, despite）。" +
   "請特別點出這類詞在會考中常見的「陷阱用法」（例如：although 不能跟 but 連用）。\n\n" +
-  "## 2️⃣ 單字語境（會考必備）\n" +
+  "## 3️⃣ 單字語境（會考必備）\n" +
   "從文中挑出 5 個影響理解且會考高頻率出現的單字，逐一說明它在本文語境中的意思與常見考法。\n\n" +
-  "## 3️⃣ 邏輯轉折（心法傳授）\n" +
+  "## 4️⃣ 邏輯轉折（心法傳授）\n" +
   "用簡單的流程說明（可以用「→」串接關鍵句），解釋段落之間的邏輯關係" +
   "（例如：先壓抑後揚、因果論證、或是正反意見對照），讓學生學會「看骨架」。\n\n" +
-  "## 4️⃣ 名師講評\n" +
-  "用輕鬆、有邏輯且略帶補教名師風格的口吻給予回饋，避免死板翻譯，要點出「為什麼這篇值得讀」。" +
-  "如果照片中看得到學生的作答痕跡，順便點評答題狀況與觀念盲點。\n\n" +
+  "## 5️⃣ 名師講評\n" +
+  "用輕鬆、有邏輯且略帶補教名師風格的口吻總結三件事：這篇為什麼值得讀、" +
+  "學生這次表現的一句話總評（有作答時）、下一篇要特別注意的一件事。\n\n" +
   "注意：不要使用 Markdown 表格，改用條列式；粗體標重點；適度使用表情符號讓國三學生讀起來不無聊。";
 
 var VOCAB_PROMPT =
   "你是一位專業的國中英文補教名師。你的學生是一位即將面對「國中教育會考」的國三學生。" +
   "照片是英文閱讀測驗頁面，請先仔細辨識照片中的英文文章，然後協助學生內化文章中的關鍵單字與片語。\n\n" +
   "請依照以下邏輯產出內容：\n" +
-  "1. 深度選字：挑出 5 個文中影響理解且會考常見的關鍵字或片語。\n" +
-  "2. 記憶網格：每個字提供 (a) 3 個同義詞、(b) 3 個反義詞（片語或無恰當反義詞時，改給「相反概念」的表達）、(c) 一個幽默好記的聯想法或字根拆解。\n" +
-  "3. 情境造句：每個字給一個符合國三學生生活情境的英文例句，附中文翻譯。\n" +
-  "4. 即時模擬考：利用這 5 個字設計一段「全新的」克漏字英文小短文（約 50-80 字），挖 5 個空格，" +
+  "1. 深度選字：挑出 5 個文中影響理解且會考常見的關鍵字或片語，以教育部國中 1200/2000 字表範圍為優先。\n" +
+  "2. 記憶網格：每個字提供 (a) 3 個同義詞、(b) 3 個反義詞（片語或無恰當反義詞時，改給「相反概念」的表達）、(c) 一個幽默好記的聯想法或字根拆解。" +
+  "同義詞與反義詞「必須優先使用國中 2000 字表範圍內的字」；若某個字超出國中範圍，請在該字後面直接加上「(進階)」標記，讓學生知道看得懂就好、不用背。\n" +
+  "3. 情境造句：每個字給一個符合國三學生生活情境的英文例句（用字盡量控制在國中範圍內），附中文翻譯。\n" +
+  "4. 猜字挑戰（會考猜字題訓練）：從文中另外挑 1-2 個「超出國中範圍、但可以從上下文推測意思」的字，" +
+  "提供：該字所在的文章原句、一個引導推理的中文線索提示（不直接說答案）、字義、以及「如何從上下文推理出來」的完整解析。\n" +
+  "5. 即時模擬考：利用第 1 點的 5 個字設計一段「全新的」克漏字英文小短文（約 50-80 字），挖 5 個空格，" +
   "短文中以 __1__ 到 __5__ 標示空格位置；每題提供 4 個選項（干擾選項要有會考鑑別度），並附標準答案與名師解析。\n\n" +
   "請只回覆純 JSON（不要 markdown 圍欄、不要任何多餘文字），格式如下：\n" +
   "{\n" +
   ' "title": "文章主題（15字以內中文）",\n' +
   ' "words": [{"word":"單字或片語","pos":"詞性","zh":"中文意思","synonyms":["s1","s2","s3"],"antonyms":["a1","a2","a3"],"mnemonic":"幽默聯想法或字根拆解","example":"英文例句","example_zh":"例句中文翻譯"}],\n' +
+  ' "guess_words": [{"word":"猜字挑戰的單字","sentence":"該字所在的文章原句","hint":"引導推理的中文線索提示","meaning":"字義（繁體中文）","reasoning":"如何從上下文推理出來（繁體中文）"}],\n' +
   ' "quiz": {"passage":"含 __1__ 至 __5__ 空格的英文短文","questions":[{"n":1,"options":["選項1","選項2","選項3","選項4"],"answer":0,"explanation":"名師解析（繁體中文，說明為什麼選這個、其他選項錯在哪）"}]},\n' +
   ' "coach_comment": "一句幽默又鼓勵人的名師結語（繁體中文）"\n' +
   "}\n" +
-  '其中 "answer" 是正確選項在 options 陣列中的索引（0 到 3）。words 恰好 5 個，questions 恰好 5 題。';
+  '其中 "answer" 是正確選項在 options 陣列中的索引（0 到 3）。words 恰好 5 個，guess_words 為 1 至 2 個，questions 恰好 5 題。';
 
 var LOADING_MSGS = {
   reading: ["名師戴上老花眼鏡讀文章中…", "正在標記會考陷阱…", "拆解文章骨架中…", "名師講評撰寫中…"],
@@ -902,6 +912,33 @@ function renderVocabResult(container, data, fresh) {
   }
   card.innerHTML = html;
   container.appendChild(card);
+
+  // guess-word challenge card (answers hidden until tapped)
+  if (data.guess_words && data.guess_words.length) {
+    var gcard = document.createElement("div");
+    gcard.className = "card";
+    var gh = '<h3>🕵️ 猜字挑戰（會考猜字題訓練）</h3>' +
+      '<p class="hint" style="margin-bottom:10px">先從文章原句和線索自己猜猜看意思，想好答案再點開解答！</p>';
+    for (var g = 0; g < data.guess_words.length; g++) {
+      var gw = data.guess_words[g];
+      gh += '<div class="word-card">';
+      gh += '<div class="word-head"><span class="w">' + escapeHtml(gw.word) + "</span></div>";
+      if (gw.sentence) gh += '<div class="example"><div class="en">' + escapeHtml(gw.sentence) + "</div></div>";
+      if (gw.hint) gh += '<div class="mnemo">🔍 線索：' + escapeHtml(gw.hint) + "</div>";
+      gh += '<button class="btn btn-ghost btn-sm reveal-btn" data-g="' + g + '" style="margin-top:10px">💡 我猜好了，看解答</button>';
+      gh += '<div class="mnemo" id="reveal-' + g + '" style="display:none;margin-top:10px">✅ <strong>' + escapeHtml(gw.meaning || "") + "</strong><br>🧭 " + escapeHtml(gw.reasoning || "") + "</div>";
+      gh += "</div>";
+    }
+    gcard.innerHTML = gh;
+    container.appendChild(gcard);
+    var rbtns = gcard.querySelectorAll(".reveal-btn");
+    for (var rb = 0; rb < rbtns.length; rb++) {
+      rbtns[rb].onclick = function () {
+        var body = gcard.querySelector("#reveal-" + this.getAttribute("data-g"));
+        if (body) { body.style.display = "block"; this.style.display = "none"; }
+      };
+    }
+  }
 
   // quiz card
   if (data.quiz && data.quiz.questions && data.quiz.questions.length) {
