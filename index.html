@@ -456,7 +456,7 @@
         1️⃣ 用手機瀏覽器打開 <b>aistudio.google.com/apikey</b><br>
         2️⃣ 登入你的 Google 帳號<br>
         3️⃣ 點 <b>「Create API key」（建立 API 金鑰）</b><br>
-        4️⃣ 複製那串 <b>AIza 開頭</b>的金鑰<br>
+        4️⃣ 複製那串 <b>AQ. 開頭</b>的金鑰（舊帳號的金鑰可能是 AIza 開頭，也可以用）<br>
         5️⃣ 回到這裡貼上 → 按「儲存並測試連線」<br><br>
         💡 免費額度每天可分析數十篇文章，個人使用綽綽有餘。金鑰只存在這支手機的瀏覽器裡，不會上傳到任何地方。
       </div>
@@ -676,17 +676,17 @@ function callGemini(promptText, imgs, jsonMode) {
   if (jsonMode) genCfg.responseMimeType = "application/json";
   if (model.indexOf("2.5-flash") !== -1) genCfg.thinkingConfig = { thinkingBudget: 0 };
 
-  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(key);
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
 
   return fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: genCfg })
   }).then(function (res) {
     return res.json().then(function (data) {
       if (!res.ok) {
         var msg = (data && data.error && data.error.message) || ("HTTP " + res.status);
-        if (res.status === 400 && /API key/i.test(msg)) throw new Error("BAD_KEY");
+        if ((res.status === 400 || res.status === 401 || res.status === 403) && /API key|credential|auth/i.test(msg)) throw new Error("BAD_KEY");
         if (res.status === 429) throw new Error("QUOTA");
         throw new Error(msg);
       }
