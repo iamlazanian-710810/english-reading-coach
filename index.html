@@ -126,6 +126,32 @@
   }
   .hint { font-size: 12px; color: var(--text-light); margin-top: 8px; line-height: 1.6; }
 
+  /* ---- answer timer ---- */
+  .timer-display {
+    text-align: center;
+    font-size: 52px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-dark);
+    letter-spacing: 2px;
+    margin: 4px 0 10px;
+  }
+  .timer-display.warn { color: #b45309; }
+  .timer-display.danger { color: var(--red); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+  .timer-row { display: flex; gap: 8px; align-items: stretch; }
+  .timer-row .timer-main { flex: 1; }
+  .timer-adj {
+    border: 1.5px solid var(--border);
+    background: #fff;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--text);
+  }
+
   .warn-banner {
     background: #fffbeb;
     border: 1px solid #fcd34d;
@@ -391,6 +417,18 @@
   <!-- ============ PAGE: capture ============ -->
   <div class="page active" id="page-capture">
 
+    <div class="card">
+      <h3>⏱️ 作答計時器</h3>
+      <div class="timer-display" id="timer-display">10:00</div>
+      <div class="timer-row">
+        <button class="timer-adj" onclick="adjustTimer(-1)">−1分</button>
+        <button class="btn btn-primary timer-main" id="timer-toggle" onclick="toggleTimer()">▶️ 開始作答</button>
+        <button class="timer-adj" onclick="adjustTimer(1)">＋1分</button>
+      </div>
+      <button class="btn btn-ghost" id="timer-reset" onclick="resetTimer()" style="margin-top:10px;display:none">🔄 重設</button>
+      <p class="hint" style="text-align:center;margin-top:8px" id="timer-hint">目標：10 分鐘內寫完一篇閱讀測驗，寫完再拍照分析</p>
+    </div>
+
     <div class="warn-banner" id="no-key-banner" style="display:none">
       ⚠️ 還沒設定 Gemini API 金鑰，AI 分析無法使用。<br>
       請先到 <a href="#" onclick="switchPage('settings');return false;">⚙️ 設定</a> 頁，照步驟申請免費金鑰（只需設定一次）。
@@ -486,7 +524,7 @@
       <button class="btn btn-danger-ghost" onclick="clearAllHistory()">🗑️ 清空所有複習紀錄</button>
     </div>
 
-    <p class="hint" style="text-align:center;margin-bottom:8px">程式版本：2026-07-10 (4)　·　模型：Gemini 3 系列</p>
+    <p class="hint" style="text-align:center;margin-bottom:8px">程式版本：2026-07-10 (5)　·　模型：Gemini 3 系列</p>
   </div>
 
 </main>
@@ -596,6 +634,114 @@ function setHistory(list) {
       showToast("儲存空間不足，這筆紀錄未能保存");
     }
   }
+}
+
+/* ================= answer timer ================= */
+var TIMER_LS_MIN = "coach_timer_min";
+var timerMinutes = parseInt(localStorage.getItem(TIMER_LS_MIN) || "10", 10);
+if (isNaN(timerMinutes) || timerMinutes < 1 || timerMinutes > 60) timerMinutes = 10;
+var timerRemaining = timerMinutes * 60;  // seconds left while paused
+var timerEndAt = null;                   // ms timestamp while running
+var timerInterval = null;
+var timerRunning = false;
+var timerDone = false;
+var timerAudioCtx = null;
+
+function fmtTimer(sec) {
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+function updateTimerDisplay(sec) {
+  var d = $("timer-display");
+  d.textContent = fmtTimer(sec);
+  d.classList.toggle("warn", timerRunning && sec <= 120 && sec > 30);
+  d.classList.toggle("danger", timerRunning && sec <= 30);
+}
+
+function updateTimerHint() {
+  $("timer-hint").textContent = "目標：" + timerMinutes + " 分鐘內寫完一篇閱讀測驗，寫完再拍照分析";
+}
+
+function adjustTimer(delta) {
+  if (timerRunning) return;
+  timerMinutes = Math.min(60, Math.max(1, timerMinutes + delta));
+  localStorage.setItem(TIMER_LS_MIN, String(timerMinutes));
+  timerRemaining = timerMinutes * 60;
+  timerDone = false;
+  $("timer-display").classList.remove("danger", "warn");
+  updateTimerDisplay(timerRemaining);
+  updateTimerHint();
+}
+
+function toggleTimer() {
+  if (timerDone) { resetTimer(); return; }
+  if (timerRunning) {
+    timerRunning = false;
+    clearInterval(timerInterval); timerInterval = null;
+    timerRemaining = Math.max(0, Math.round((timerEndAt - Date.now()) / 1000));
+    $("timer-toggle").textContent = "▶️ 繼續";
+    updateTimerDisplay(timerRemaining);
+  } else {
+    // unlock audio on this user gesture so the alarm can play later (iOS)
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx && !timerAudioCtx) timerAudioCtx = new Ctx();
+      if (timerAudioCtx && timerAudioCtx.state === "suspended") timerAudioCtx.resume();
+    } catch (e) {}
+    timerRunning = true;
+    timerEndAt = Date.now() + timerRemaining * 1000;
+    $("timer-toggle").textContent = "⏸️ 暫停";
+    $("timer-reset").style.display = "block";
+    timerInterval = setInterval(timerTick, 250);
+    updateTimerDisplay(timerRemaining);
+  }
+}
+
+function timerTick() {
+  var sec = Math.max(0, Math.round((timerEndAt - Date.now()) / 1000));
+  updateTimerDisplay(sec);
+  if (sec <= 0) {
+    clearInterval(timerInterval); timerInterval = null;
+    timerRunning = false;
+    timerDone = true;
+    $("timer-toggle").textContent = "🔄 再計一次";
+    var d = $("timer-display");
+    d.classList.add("danger");
+    d.textContent = "時間到！";
+    timerAlarm();
+  }
+}
+
+function resetTimer() {
+  timerRunning = false; timerDone = false;
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerRemaining = timerMinutes * 60;
+  $("timer-toggle").textContent = "▶️ 開始作答";
+  $("timer-reset").style.display = "none";
+  $("timer-display").classList.remove("danger", "warn");
+  updateTimerDisplay(timerRemaining);
+}
+
+function timerAlarm() {
+  if (navigator.vibrate) { try { navigator.vibrate([300, 150, 300, 150, 600]); } catch (e) {} }
+  try {
+    var ctx = timerAudioCtx;
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    for (var i = 0; i < 3; i++) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      var t0 = ctx.currentTime + i * 0.5;
+      gain.gain.setValueAtTime(0.001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
+      osc.start(t0);
+      osc.stop(t0 + 0.45);
+    }
+  } catch (e) {}
 }
 
 /* ================= page switching ================= */
@@ -1276,6 +1422,9 @@ function clearAllHistory() {
     localStorage.setItem(LS_KEY_MODEL, savedModel);
   }
   $("model-select").value = savedModel;
+
+  updateTimerDisplay(timerRemaining);
+  updateTimerHint();
 
   updateKeyBanner();
   if (!savedKey) switchPage("settings");
